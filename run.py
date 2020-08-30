@@ -69,7 +69,7 @@ class mv_embedding(nn.Module):
 
 
 if __name__ == '__main__':
-    input_path = r'.\data\Univariate_arff'
+    input_path = r'./data/Univariate_arff'
     dataset_name = 'Car'
     batch_size = 10
 

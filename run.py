@@ -7,30 +7,36 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.data import TensorDataset
+from model.model import mv_embedding
+import os
+
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 
 def generate_kernels(num_kernels=1000, kernel_length=7):
     weights = np.random.normal(1, 1, (num_kernels, kernel_length))
     for i in range(num_kernels):
         weights[i, :] = weights[i, :]/sum(abs(weights[i, :]))
-
     return weights
 
 # print(generate_kernels(7,2))
 
 
 def apply_kernels(time_series, kernels):
-    kernels_output = torch.zeros([time_series.shape[0],kernels.shape[0],time_series.shape[1]-kernels.shape[1]+1])
+    kernels_output = torch.zeros(
+        [time_series.shape[0], kernels.shape[0], time_series.shape[1]-kernels.shape[1]+1])
     for j in range(time_series.shape[0]):
         for i in range(kernels.shape[0]):
-            kernels_output[j, i,] = torch.from_numpy(np.convolve(time_series[j,], kernels[i,], mode='valid'))
+            kernels_output[j, i, ] = torch.from_numpy(
+                np.convolve(time_series[j, ], kernels[i, ], mode='valid'))
     return kernels_output
 
+
 def one_hot(labels, shift, max, batch_size):
-    target=labels.add(shift)
+    target = labels.add(shift)
     output = torch.zeros(batch_size, max+1)
     for i in range(batch_size):
-        output[i,int(target[i].item())] = 1
+        output[i, int(target[i].item())] = 1
     return output
 # # print(kernels)
 # time_series=np.array([1,2,3])
@@ -46,37 +52,39 @@ def one_hot(labels, shift, max, batch_size):
 #         return x
 
 
-class mv_embedding(nn.Module):
-    def __init__(self):
-        super(mv_embedding, self).__init__()
-        self.embedding = nn.Linear(
-            input_size-kernels.shape[1]+1, 3, bias=False)
-        self.fc2 = nn.Linear(3*kernels.shape[0], output_size)
+# class mv_embedding(nn.Module):
+#     def __init__(self):
+#         super(mv_embedding, self).__init__()
+#         self.embedding = nn.Linear(
+#             input_size-kernels.shape[1]+1, 3, bias=False)
+#         self.fc2 = nn.Linear(3*kernels.shape[0], output_size)
 
-    def forward(self, x):
-        # x = apply_kernels(x, kernels)
-        y = torch.zeros([x.shape[0],kernels.shape[0],3])        
-        # x = self.embedding(x[0, ])
-        # print(x.shape[0])
-        for j in range(x.shape[0]):
-            for i in range(kernels.shape[0]):
-                # print(self.embedding(x[j,i, ]))
-                y[j,i,] = self.embedding(x[j,i, ])
-        y = y.view([x.shape[0],3*kernels.shape[0]])
-        y = self.fc2(y)
-        # print(y.shape)
-        return y
+#     def forward(self, x):
+#         # x = apply_kernels(x, kernels)
+#         y = torch.zeros([x.shape[0],kernels.shape[0],3])
+#         # x = self.embedding(x[0, ])
+#         # print(x.shape[0])
+#         for j in range(x.shape[0]):
+#             for i in range(kernels.shape[0]):
+#                 # print(self.embedding(x[j,i, ]))
+#                 y[j,i,] = self.embedding(x[j,i, ])
+#         y = y.view([x.shape[0],3*kernels.shape[0]])
+#         y = self.fc2(y)
+#         # print(y.shape)
+#         return y
 
 
 if __name__ == '__main__':
     input_path = r'./data/Univariate_arff'
     dataset_name = 'Car'
-    batch_size = 10
+    batch_size = 20
 
     gpu = 0
     device = torch.device(gpu if torch.cuda.is_available() else "cpu")
     if torch.cuda.is_available():
         torch.cuda.set_device(gpu)
+
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     training_data = np.loadtxt(
         f"{input_path}/{dataset_name}/{dataset_name}_TRAIN.txt")
@@ -98,19 +106,22 @@ if __name__ == '__main__':
     testloader = DataLoader(
         test_set, batch_size, shuffle=False, num_workers=2)
 
-    kernels = generate_kernels(100, 5)
+    kernels = generate_kernels(10, 5)
     input_size = X_training.shape[1]
     output_size = torch.unique(Y_training).shape[0]
 
     # print(input_size, output_size)
 
-    model = mv_embedding()
-    model.to('cuda')
+    model = mv_embedding(
+        input_size, kernels_shape=kernels.shape, output_size=output_size)
+
+    # opt_level='O0'
+    model = model.to(device)
 
     criterion = nn.MSELoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.001,weight_decay=0.01)
+    optimizer = optim.SGD(model.parameters(), lr=0.001, weight_decay=0.01)
 
-    for epoch in range(50):  # loop over the dataset multiple times
+    for epoch in range(500):  # loop over the dataset multiple times
 
         running_loss = 0.0
         for i, data in enumerate(trainloader, 0):
@@ -119,16 +130,20 @@ if __name__ == '__main__':
             inputs, labels = data
 
             # labels.to('cuda')
-            inputs = apply_kernels(inputs, kernels).to('cuda')
+            # inputs = apply_kernels(inputs, kernels)
+            inputs = apply_kernels(inputs, kernels)
+            inputs = inputs.to(device)
             # print(inputs)
             # zero the parameter gradients
             optimizer.zero_grad()
 
             # forward + backward + optimize
             outputs = model(inputs)
-            labels = one_hot(labels, -1, 3, batch_size)
-            labels.to('cuda')
-            
+            labels = one_hot(labels, -1, 3, batch_size).to('cuda:0')
+
+            # print(labels)
+            # print(outputs)
+
             # print(labels)
             # labels=labels.cuda()
             # print(outputs)
@@ -157,16 +172,17 @@ if __name__ == '__main__':
     with torch.no_grad():
         for data in testloader:
             images, labels = data
-            images = apply_kernels(images, kernels)
+            images = apply_kernels(images, kernels).to('cuda')
             # print(labels[1:10])
-            labels = labels.add(-torch.min(labels))
+            labels = labels.type(torch.int64)
+            labels = labels.add(-torch.min(labels)).to('cuda')
             # print(labels[1:10])
             # imgaes=images.to('cuda')
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
+            # print(predicted.dtype,labels)
             correct += (predicted == labels).sum().item()
-
 
     print('Accuracy of the network on the 10000 test images: %d %%' % (
         100 * correct / total))

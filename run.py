@@ -1,8 +1,8 @@
 import torch.optim as optim
 import torch.nn as nn
-import torch.nn.functional as F
-from torch.nn import init
-import pandas as pd
+# import torch.nn.functional as F
+# from torch.nn import init
+# import pandas as pd
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
@@ -23,8 +23,7 @@ def generate_kernels(num_kernels=1000, kernel_length=7):
 
 
 def apply_kernels(time_series, kernels):
-    kernels_output = torch.zeros(
-        [time_series.shape[0], kernels.shape[0], time_series.shape[1]-kernels.shape[1]+1])
+    kernels_output = torch.zeros([time_series.shape[0], kernels.shape[0], time_series.shape[1]-kernels.shape[1]+1])
     for j in range(time_series.shape[0]):
         for i in range(kernels.shape[0]):
             kernels_output[j, i, ] = torch.from_numpy(
@@ -184,5 +183,4 @@ if __name__ == '__main__':
             # print(predicted.dtype,labels)
             correct += (predicted == labels).sum().item()
 
-    print('Accuracy of the network on the 10000 test images: %d %%' % (
-        100 * correct / total))
+    print('Accuracy of the network on the 10000 test images: %d %%' % (100*correct / total))

@@ -15,7 +15,8 @@ class mv_embedding(nn.Module):
         self.kernels_shape = kernels_shape
         self.embedding_size = embedding_size
         self.embedding = nn.Linear(input_size, embedding_size, bias=True)
-        self.fc2 = nn.Linear(embedding_size*kernels_shape[0], output_size, bias=True)
+        self.fc1 = nn.Linear(embedding_size*kernels_shape[0], 10*output_size)
+        self.fc2 = nn.Linear(10*output_size, output_size, bias=True)
         self.bnor = nn.BatchNorm1d(embedding_size)
         self.relu = nn.ReLU()
 
@@ -36,6 +37,8 @@ class mv_embedding(nn.Module):
         y = y.view([x.shape[0], self.embedding_size*self.kernels_shape[0]])
         # y = self.relu(y)
         # y = torch.sigmoid(y)
+        y = self.fc1(y)
+        y = torch.sigmoid(y)
         y = self.fc2(y)
         # print(y.shape)
         return y

@@ -40,6 +40,8 @@ def train_model(train_loader, test_loader, model, learning_rate, epochs):
             l2 = 0
             for p in model.fc2.parameters():
                 l2 += p.pow(2).sum()
+            for p in model.fc1.parameters():
+                l2 += p.pow(2).sum()
             loss += 0.01*l2
 
             loss.backward()
@@ -75,7 +77,7 @@ def test_model(test_loader, model):
             total += labels.size(0)
             # print(predicted.dtype,labels)
             correct += (predicted == labels).sum().item()
-    print('Accuracy of the network on the %d test cases: %d %%' % (total, 100*correct / total))
+    print('Accuracy of the network on the %d test cases: %.2f %%' % (total, 100*correct / total))
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@ class mv_embedding(nn.Module):
         self.kernels_shape = kernels_shape
         self.embedding = nn.Linear(input_size, 3, bias=True)
         self.fc2 = nn.Linear(3*kernels_shape[0], output_size, bias=False)
+        self.bnor = nn.BatchNorm1d(3)
 
     def forward(self, x):
         # x = apply_kernels(x, kernels)
@@ -25,7 +26,13 @@ class mv_embedding(nn.Module):
             for i in range(self.kernels_shape[0]):
                 # print(self.embedding(x[j,i, ]))
                 y[j, i, ] = self.embedding(x[j, i, ])
+        # # layer normalization for each embedding? batch normalization relates to auto grad parameters
+        # for i in range(y.shape[2]):
+        #     y[:, :, i] = (y[:, :, i]-y[:, :, i].mean())/y[:, :, i].std()
+        y = torch.transpose(y, 1, 2)
+        y = self.bnor(y)
         y = y.view([x.shape[0], 3*self.kernels_shape[0]])
+        # y = torch.sigmoid(y)
         y = self.fc2(y)
         # print(y.shape)
         return y

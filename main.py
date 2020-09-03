@@ -106,7 +106,7 @@ if __name__ == '__main__':
     # model = stats_embedding(kernels_num*5, output_size)
     model = model.to(device)
 
-    train_model(train_loader, test_loader, model, learning_rate=0.0001, epochs=50)
+    train_model(train_loader, test_loader, model, learning_rate=0.001, epochs=50)
 
     test_model(test_loader, model)
 

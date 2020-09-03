@@ -86,7 +86,7 @@ if __name__ == '__main__':
     kernels = generate_kernels(kernels_num, kernels_length)
     x_train, y_train, x_test, y_test = data_loader(input_path, dataset_name, batch_size)
     x_train = apply_kernels(x_train, kernels)
-    print(x_train.shape)
+    # print(x_train.shape)
     # x_train = stats(x_train)
     x_train = x_train.to(device)
     x_test = apply_kernels(x_test, kernels)

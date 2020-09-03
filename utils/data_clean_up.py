@@ -2,7 +2,7 @@ import numpy as np
 import torch
 
 
-def data_loader(input_path, dataset_name, batch_size):
+def data_loader(input_path, dataset_name):
     train_dataset = np.loadtxt(f'{input_path}/{dataset_name}/{dataset_name}_TRAIN.txt')
     test_dataset = np.loadtxt(f'{input_path}/{dataset_name}/{dataset_name}_TEST.txt')
     # train dataset clean up

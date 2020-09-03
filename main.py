@@ -16,7 +16,7 @@ import os
 def train_model(train_loader, test_loader, model, learning_rate, epochs):
     # criterion = nn.MSELoss()
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.RMSprop(model.parameters(), learning_rate, weight_decay=0.01)
+    optimizer = optim.Adam(model.parameters(), learning_rate)
     running_loss = 0.0
     for epoch in range(epochs):
         for i, (inputs, labels) in enumerate(train_loader):
@@ -37,6 +37,11 @@ def train_model(train_loader, test_loader, model, learning_rate, epochs):
             labels = labels.to(device)
             # print(inputs.dtype,outputs.dtype,labels.dtype)
             loss = criterion(outputs, labels)
+            l2 = 0
+            for p in model.fc2.parameters():
+                l2 += p.pow(2).sum()
+            loss += 0.01*l2
+
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
@@ -77,14 +82,14 @@ if __name__ == '__main__':
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     input_path = r'./data/Univariate_arff'
     dataset_name = 'Car'
-    batch_size = 20
+
     kernels_num = 500
     kernels_length = 5
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # data loading
     kernels = generate_kernels(kernels_num, kernels_length)
-    x_train, y_train, x_test, y_test = data_loader(input_path, dataset_name, batch_size)
+    x_train, y_train, x_test, y_test = data_loader(input_path, dataset_name)
     x_train = apply_kernels(x_train, kernels)
     # print(x_train.shape)
     # x_train = stats(x_train)
@@ -94,6 +99,9 @@ if __name__ == '__main__':
     x_test = x_test.to(device)
     input_size = x_train.shape[2]
     output_size = y_train.shape[1]
+    embedding_size = max(int(input_size**0.25), 2)
+    batch_size = min(output_size*4, int(x_train.shape[0]/4))
+    print(embedding_size, batch_size)
 
     training_set = TensorDataset(x_train, y_train)
     train_loader = DataLoader(training_set, batch_size, shuffle=True)
@@ -102,11 +110,11 @@ if __name__ == '__main__':
     test_loader = DataLoader(test_set, batch_size, shuffle=False)
 
     # model learning
-    model = mv_embedding(input_size, kernels_shape=kernels.shape, output_size=output_size)
+    model = mv_embedding(input_size, kernels_shape=kernels.shape, output_size=output_size, embedding_size=embedding_size)
     # model = stats_embedding(kernels_num*5, output_size)
     model = model.to(device)
 
-    train_model(train_loader, test_loader, model, learning_rate=0.001, epochs=50)
+    train_model(train_loader, test_loader, model, learning_rate=0.001, epochs=500)
 
     test_model(test_loader, model)
 

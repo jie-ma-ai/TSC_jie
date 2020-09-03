@@ -10,16 +10,18 @@ import torch
 
 
 class mv_embedding(nn.Module):
-    def __init__(self, input_size, kernels_shape, output_size):
+    def __init__(self, input_size, kernels_shape, output_size, embedding_size):
         super(mv_embedding, self).__init__()
         self.kernels_shape = kernels_shape
-        self.embedding = nn.Linear(input_size, 3, bias=True)
-        self.fc2 = nn.Linear(3*kernels_shape[0], output_size, bias=False)
-        self.bnor = nn.BatchNorm1d(3)
+        self.embedding_size = embedding_size
+        self.embedding = nn.Linear(input_size, embedding_size, bias=True)
+        self.fc2 = nn.Linear(embedding_size*kernels_shape[0], output_size, bias=True)
+        self.bnor = nn.BatchNorm1d(embedding_size)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         # x = apply_kernels(x, kernels)
-        y = torch.zeros([x.shape[0], self.kernels_shape[0], 3]).to('cuda')
+        y = torch.zeros([x.shape[0], self.kernels_shape[0], self.embedding_size]).to('cuda')
         # x = self.embedding(x[0, ])
         # print(x.shape[0])
         for j in range(x.shape[0]):
@@ -31,7 +33,8 @@ class mv_embedding(nn.Module):
         #     y[:, :, i] = (y[:, :, i]-y[:, :, i].mean())/y[:, :, i].std()
         y = torch.transpose(y, 1, 2)
         y = self.bnor(y)
-        y = y.view([x.shape[0], 3*self.kernels_shape[0]])
+        y = y.view([x.shape[0], self.embedding_size*self.kernels_shape[0]])
+        # y = self.relu(y)
         # y = torch.sigmoid(y)
         y = self.fc2(y)
         # print(y.shape)

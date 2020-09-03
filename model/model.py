@@ -1,6 +1,6 @@
 # import torch.optim as optim
 import torch.nn as nn
-# import torch.nn.functional as F
+import torch.nn.functional as F
 # from torch.nn import init
 # import pandas as pd
 # import numpy as np
@@ -13,9 +13,8 @@ class mv_embedding(nn.Module):
     def __init__(self, input_size, kernels_shape, output_size):
         super(mv_embedding, self).__init__()
         self.kernels_shape = kernels_shape
-        self.embedding = nn.Linear(
-            input_size-kernels_shape[1]+1, 3, bias=False)
-        self.fc2 = nn.Linear(3*kernels_shape[0], output_size)
+        self.embedding = nn.Linear(input_size, 3, bias=True)
+        self.fc2 = nn.Linear(3*kernels_shape[0], output_size, bias=False)
 
     def forward(self, x):
         # x = apply_kernels(x, kernels)
@@ -30,3 +29,16 @@ class mv_embedding(nn.Module):
         y = self.fc2(y)
         # print(y.shape)
         return y
+
+
+class stats_embedding(nn.Module):
+    def __init__(self, input_size, output_size):
+        super().__init__()
+        self.fc0 = nn.Linear(input_size, 30)
+        self.fc = nn.Linear(30, output_size)
+
+    def forward(self, x):
+        x = self.fc0(x)
+        x = F.sigmoid(x)
+        x = self.fc(x)
+        return x

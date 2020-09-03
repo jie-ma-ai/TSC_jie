@@ -1,6 +1,4 @@
 import numpy as np
-from torch.utils.data import TensorDataset
-from torch.utils.data import DataLoader
 import torch
 
 
@@ -10,7 +8,7 @@ def data_loader(input_path, dataset_name, batch_size):
     # train dataset clean up
     x_train, y_train = train_dataset[:, 1:], train_dataset[:, 0]
     x_train = fill_nan_0_min(x_train)
-    input_size = x_train.shape[1]
+    # input_size = x_train.shape[1]
 
     # test dataset clean up
     x_test, y_test = test_dataset[:, 1:], test_dataset[:, 0]
@@ -21,24 +19,25 @@ def data_loader(input_path, dataset_name, batch_size):
     y = one_hot(y)
     y_train = y[: y_train.shape[0], :]
     y_test = y[-y_test.shape[0]:, :]
-    output_size = y_train.shape[1]
+    # output_size = y_train.shape[1]
 
     # numpy to tensor to torch dataloarder
     x_train = torch.from_numpy(x_train)
     y_train = torch.from_numpy(y_train)
-    training_set = TensorDataset(x_train, y_train)
-    train_loader = DataLoader(training_set, batch_size, shuffle=True)
+    # training_set = TensorDataset(x_train, y_train)
+    # train_loader = DataLoader(training_set, batch_size, shuffle=True)
     x_test = torch.from_numpy(x_test)
     y_test = torch.from_numpy(y_test)
-    test_set = TensorDataset(x_test, y_test)
-    test_loader = DataLoader(test_set, batch_size, shuffle=False)
+    # test_set = TensorDataset(x_test, y_test)
+    # test_loader = DataLoader(test_set, batch_size, shuffle=False)
 
     print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
-    return train_loader, test_loader, input_size, output_size
+    return x_train, y_train, x_test, y_test
 
 
 def fill_nan_0_min(arr):
     mask = np.isnan(arr)
+    print('#NA: ', len(mask[mask == True]))
     # arr = np.where(~mask, arr, [0])
     # arr = np.where(~mask, arr, min(arr.min(), [0]))
     arr[mask] = 0

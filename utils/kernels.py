@@ -3,7 +3,7 @@ import numpy as np
 
 
 def generate_kernels(num_kernels=1000, kernel_length=7):
-    weights = torch.randint(1, 100, (num_kernels, kernel_length))
+    weights = torch.randn((num_kernels, kernel_length))
     weights = weights.type(torch.float64)
     for i in range(num_kernels):
         weights[i, :] = torch.div(weights[i, :], torch.sum(torch.abs(weights[i, :])))
